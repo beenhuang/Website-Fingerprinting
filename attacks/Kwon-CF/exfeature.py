@@ -9,141 +9,69 @@ from os.path import abspath, dirname, join, basename
 import numpy as np
 
 # constants
-DIRECTION_OUT = 1.0
-DIRECTION_IN = -1.0
+DIRECTION_IN = 1
+DIRECTION_OUT = -1
 
-MAX_COUNT = 100
-MAX_LABEL = 53
+MAX_COUNT = 10
 
 ###########  get general trce  ##########
 
 # general trace: [[timestamp1, direction1], [ts2, direct2], ... ]
-def get_general_trace(file):
-    trace = []
+def get_general_trace(trace):
+    if(trace[3] == 'general'):
+        label = 0
+    elif(trace[3] == 'IpClient'):
+        label = 1
+    elif(trace[3] == 'IpHS'):
+        label = 2
+    elif(trace[3] == 'RpClient'):
+        label = 3
+    elif(trace[3] == 'RpHS'):
+        label = 4    
 
-    #print(f"file: {file}")
-    with open(file, "r") as f:
-        for line in f.readlines():
-            line = line.split("\t")
-            trace.append([float(line[0]), int(line[1])])       
+    gen_total = [int(x.split(":")[2]) for x in trace[4:]]        
 
-    return trace
-
+    return gen_total, label
 
 ################## transform trace ###################
 
-# get general in/out trace
-def transform_general_inout_trace(trace):
-    gen_in = [elem for elem in trace if elem[1] == DIRECTION_IN]
-    gen_out = [elem for elem in trace if elem[1] == DIRECTION_OUT]
-
-    return gen_in, gen_out
-
-
 # index array of outgoing packets
-def transform_index_out_trace(trace):
-    index_out = [index for index,elem in enumerate(trace) if elem[1] == DIRECTION_OUT]
-    
-    # if less than MAX_COUNT, then fill -1
-    index_out.extend(-1 for _ in range(MAX_COUNT-len(index_out)))       
+def get_first_10_cells(trace):  
+    trace.extend(0 for _ in range(MAX_COUNT-len(trace)))       
 
-    return index_out[:MAX_COUNT]
+    return trace[:10]
 
+# get general in/out trace
+def get_inout_in_50(trace):
+    gen_in=[x for x in trace[:50] if x == DIRECTION_IN]
+    gen_out=[x for x in trace[:50] if x == DIRECTION_OUT]
 
-# current_outgoing_index - previous_outgoing_index
-def transform_relative_index_out(trace):
-    relative_index_out = []
-    prev_index = 0
+    return len(gen_in), len(gen_out)
 
-    for index, elem in enumerate(trace):
-        if elem[1] == DIRECTION_OUT:
-            relative_index_out.append(index - prev_index)
-            prev_index = index
-
-    # if less than MAX_COUNT, then fill -1
-    relative_index_out.extend(-1 for _ in range(MAX_COUNT-len(relative_index_out)))  
-
-    return relative_index_out[:MAX_COUNT]
-
-
-
-def transform_unknown_burst(trace):
-    bursts = []
-    curburst = 0
-    stopped = 0
-
-    for elem in trace:
-        if elem[1] == DIRECTION_IN:
-            stopped = 0
-            curburst -= elem[1]
-            #curburst += 1
-        if elem[1] == DIRECTION_OUT and stopped == 0:
-            stopped = 1
-        if elem[1] == DIRECTION_OUT and stopped == 1:
-            stopped = 0
-            bursts.append(curburst)
- 
-    return bursts
-
-def get_trace_label(file):
-    if "-" in basename(file):
-        label = int(basename(file).split("-")[0])
-    else:
-        label = MAX_LABEL    
-
-    return label
 
 ############# main function #################
 
-def extract_features(file):
+def extract_features(trace):
     # 210 features
     all_features = []
     
-    gen_total = get_general_trace(file)
+    gen_total, label = get_general_trace(trace)
 
-    gen_in, gen_out =  transform_general_inout_trace(gen_total) 
-    index_out = transform_index_out_trace(gen_total)
-    relative_index_out = transform_relative_index_out(gen_total)
-    
-    # ?
-    unknown_bursts = transform_unknown_burst(gen_total)
-    #print(f"bursts: {bursts}")
+    first_10 =  get_first_10_cells(gen_total) 
+    out_50, in_50 = get_inout_in_50(gen_total)
 
-    # [1] number of packets
-    all_features.append(len(gen_total))
-    # [2] number of outgoing packets
-    all_features.append(len(gen_out))
-    # [3] number of incoming packets
-    all_features.append(len(gen_in))
+
+    # [1] circuit construction sequence
+    all_features.extend(first_10)
+    # [2] number of outgoing packets within the first 50 cells
+    #all_features.append(out_50)
+    # [3] number of incoming packets within the first 50 cells
+    #all_features.append(in_50)
     # [4] transmission time
-    all_features.append(gen_total[-1][0] - gen_total[0][0])
-
-    # [5] index number of outgoing packets, size:100
-    all_features.extend(index_out)
-    # [6] relative index number of outgoing packets, size:100
-    all_features.extend(relative_index_out)
-
-    # [7] max number of bursts        
-    all_features.append(max(unknown_bursts))
-    # [8] average of bursts
-    all_features.append(sum(unknown_bursts)/len(unknown_bursts))
-    # [9] number of bursts
-    all_features.append(len(unknown_bursts))
-    # [10] length of burst > 5
-    all_features.append(len([elem for elem in unknown_bursts if elem > 5]))
-    # [11] length of burst > 10
-    all_features.append(len([elem for elem in unknown_bursts if elem > 10]))
-    # [12] length of burst > 15
-    all_features.append(len([elem for elem in unknown_bursts if elem > 15]))
+    #all_features.append(gen_total[-1][0] - gen_total[0][0])    
 
 
-    # the label of the trace
-    label = get_trace_label(file)
-
-    #if len(all_features) != 210:
-    #    print(f"feature: {len(all_features)}, file: {file}")
-
-    return (all_features, label)
+    return all_features, label
 
 
 if __name__ == "__main__":

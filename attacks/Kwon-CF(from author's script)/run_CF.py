@@ -8,16 +8,14 @@
 import argparse
 import os
 import sys
-import csv
 import time
 import logging
 import numpy as np
 from os.path import join, basename, abspath, splitext, dirname, pardir, isdir
 import multiprocessing as mp
-import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 from exfeature import extract_features
 from c45 import C45
@@ -29,8 +27,12 @@ CURRENT_TIME = time.strftime("%Y.%m.%d-%H:%M:%S", time.localtime())
 
 BASE_DIR = abspath(join(dirname(__file__)))
 INPUT_DIR = join(BASE_DIR)
-OUTPUT_DIR = join(BASE_DIR, "result")
+OUTPUT_DIR = join(BASE_DIR, "results")
 
+
+# constants
+DIRECTION_OUT = 1.0
+DIRECTION_IN = -1.0
 
 def get_logger():
     logging.basicConfig(format="[%(asctime)s]>>> %(message)s", level=logging.INFO, datefmt = "%Y-%m-%d %H:%M:%S")
@@ -55,25 +57,15 @@ def parse_arguments():
 
 
 def generate_feature_vectors(data_dir):
-    # gen files
-    files = [join(data_dir, "general-trace", file) for file in os.listdir(join(data_dir, "general-trace"))]
-    # hs files
-    hs_files = [join(data_dir, "hs-trace", file) for file in os.listdir(join(data_dir, "hs-trace"))]
-    files.extend(hs_files)
+    files = [join(data_dir, file) for file in os.listdir(data_dir)]
+    
+    with mp.Pool(mp.cpu_count()) as pool:
+        data = pool.map(extract_features, files)
 
     X, y = [], []
-    for file in files: # each file
-        with open(file, "r") as f:
-            reader = csv.reader(f, delimiter=",")
-
-            for trace in reader:
-                feature, label = extract_features(trace)
-
-                X.append(feature)
-                y.append(label)   
-
-    #print(f"X: {X}")
-    #print(f"y: {y}")
+    for elem in data:  
+        X.append(elem[0])
+        y.append(elem[1])
 
 
     return X, y
@@ -91,36 +83,50 @@ def test_cf(model, X_test):
 
     return y_pred
 
-def get_closeworld_score(y_true, y_pred):
+
+# open-world score
+def get_openworld_score(y_true, y_pred, label_unmon):
+    print(f"label_unmon: {label_unmon}")
+    # TP-correct, TP-incorrect, FN  TN, FN
+    tp_c, tp_i, fn, tn, fp = 0, 0, 0, 0, 0
+
+    # traverse preditions
+    for i in range(len(y_pred)):
+        # [case_1]: positive sample, and predict positive and correct.
+        if y_true[i] != label_unmon and y_pred[i] != label_unmon and y_pred[i] == y_true[i]:
+            tp_c += 1
+        # [case_2]: positive sample, predict positive but incorrect class.
+        elif y_true[i] != label_unmon and y_pred[i] != label_unmon and y_pred[i] != y_true[i]:
+            tp_i += 1
+        # [case_3]: positive sample, predict negative.
+        elif y_true[i] != label_unmon and y_pred[i] == label_unmon:
+            fn += 1
+        # [case_4]: negative sample, predict negative.    
+        elif y_true[i] == label_unmon and y_pred[i] == y_true[i]:
+            tn += 1
+        # [case_5]: negative sample, predict positive    
+        elif y_true[i] == label_unmon and y_pred[i] != y_true[i]:
+            fp += 1   
+        else:
+            sys.exit(f"[ERROR]: {y_pred[i]}, {y_true[i]}")        
+
     # accuracy
-    accuracy = accuracy_score(y_true, y_pred)
+    accuracy = (tp_c+tn) / float(tp_c+tp_i+fn+tn+fp)
     # precision      
-    precision = precision_score(y_true, y_pred, average="macro")
+    precision = tp_c / float(tp_c+tp_i+fp)
     # recall
-    recall = recall_score(y_true, y_pred, average="macro")
+    recall = tp_c / float(tp_c+tp_i+fn)
     # F-score
     f1 = 2*(precision*recall) / float(precision+recall)
 
     lines = []
+    lines.append(f"[POS] TP-c: {tp_c}, TP-i(incorrect class): {tp_i}, FN: {fn}\n")
+    lines.append(f"[NEG] TN: {tn}, FP: {fp}\n\n")
     lines.append(f"accuracy: {accuracy}\n")
     lines.append(f"precision: {precision}\n")
     lines.append(f"recall: {recall}\n")
     lines.append(f"F1: {f1}\n")
     return lines
-
-#
-def make_confusion_matrix_plot(X, y, model, file):
-
-    cm = confusion_matrix(y, model.predict(X))
-
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['gen','Client-IP','OS-IP','Client-RP','OS-RP'])  
-    #disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-
-    disp.plot()
-    #plt.show()
-    plt.savefig(file)
-
-
 
 
 # MAIN function
@@ -151,15 +157,12 @@ def main():
     logger.info(f"[GOT] predicted labels of test samples.")
     
     # get metrics value
-    lines = get_closeworld_score(y_test, y_pred)
+    lines = get_openworld_score(y_test, y_pred, max(y_test))
     logger.info(f"[CALCULATED] open-world scores.")
+    
     with open(join(OUTPUT_DIR, f"{CURRENT_TIME}_{args['out']}.txt"), "w") as f:
         f.writelines(lines)
         logger.info(f"[SAVED] metrics scores in the {args['out']}.txt")
-
-    # make confusion matrix plot
-    make_confusion_matrix_plot(X_test, y_test, model, join(OUTPUT_DIR, f"{CURRENT_TIME}_{args['out']}.png"))
-    print(f"y_pred: {y_pred}")
 
     logger.info(f"{MODULE_NAME}: complete successfully.\n")
 

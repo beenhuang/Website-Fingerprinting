@@ -1,9 +1,9 @@
 #!/bin/bash
 
 
-datadir=data
+datadir=server
 
-outfile=kwon
+outfile=orignal
 
 
 echo "---------------     run Kwon's CF     ---------------"
