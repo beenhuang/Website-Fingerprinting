@@ -1,7 +1,0 @@
-[POS] TP-c: 427, TP-i(incorrect class): 73, FN: 30
-[NEG] TN: 162, FP: 38
-
-accuracy: 0.8068493150684931
-precision: 0.7936802973977695
-recall: 0.8056603773584906
-F1: 0.7996254681647941
