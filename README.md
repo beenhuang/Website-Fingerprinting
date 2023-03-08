@@ -12,6 +12,7 @@ This repository contains dataset, WF, and WFD source code.
 	`contains 20,000 inst, which consists of 50(mon)*200(inst)+10,000(unmon)*1(inst)`
 	
 2. GoodEnough dataset: 	https://github.com/pylls/padding-machines-for-tor/tree/master/dataset
+	
 	`contains 20,000 inst, which consist of 50(mon)*10(page)*20(inst)+10,000(unmon)*1(inst)`
 
 ## WF attacks source code 
