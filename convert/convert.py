@@ -7,14 +7,14 @@
 
 import argparse
 import os
-import csv
 import sys
 import logging
-import pickle
 import multiprocessing as mp
 from os.path import abspath, dirname, join, basename, pardir, exists, splitext
 
-from dataset.goodenough import standard_trace, get_file_list
+#from dataset.goodenough import standard_trace, get_file_list
+from dataset.wtfpad_protected import standard_trace, get_file_list
+
 
 # create logger
 def get_logger():
@@ -83,7 +83,7 @@ def main(data_dir, trace_dir):
 if __name__ == "__main__":
     BASE_DIR = abspath(join(dirname(__file__), pardir))
     RAW_DATA_DIR = join(BASE_DIR, "raw-data")
-    DATA_DIR = join(BASE_DIR, "data")
+    TRACE_DIR = join(BASE_DIR, "data")
 
     try:
         logger = get_logger()
@@ -92,11 +92,11 @@ if __name__ == "__main__":
 
         raw_data_dir = join(RAW_DATA_DIR, args["in"])
             
-        data_dir = join(DATA_DIR, args["in"])
-        if not exists(data_dir):
-            os.makedirs(data_dir)
+        trace_dir = join(TRACE_DIR, args["in"])
+        if not exists(trace_dir):
+            os.makedirs(trace_dir)
 
-        main(raw_data_dir, data_dir)    
+        main(raw_data_dir, trace_dir)    
 
     except KeyboardInterrupt:
         sys.exit(-1)    

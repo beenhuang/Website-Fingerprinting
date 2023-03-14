@@ -17,8 +17,8 @@ NONPADDING_SENT = 1
 NONPADDING_RECV = -1
 
 # return ["time \t direction" ...]
-# time: float
-# direction: int
+# time: float (xx.xx second)
+# direction: int (1 or -1)
 def standard_trace(lines, strip=True):
     if strip:
         for idx, line in enumerate(lines):

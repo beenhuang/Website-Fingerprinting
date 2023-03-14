@@ -5,6 +5,7 @@
 <brief>   used for WTF-PAD protected dataset
 """
 
+import os
 
 # return ["time \t direction" ...]
 # time: float
@@ -22,7 +23,7 @@ def standard_trace(lines):
         size = int(e[1].strip("\n"))
         direction = 1 if size > 0 else -1
 
-        good_trace.append(f"{time} {direction}")
+        trace.append(f"{time}\t{direction}")
     
     return trace
 
