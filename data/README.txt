@@ -1,2 +1,2 @@
-This is a dataset directory.
-Put the dataset in the directory.
+This is a dataset directory converted by convert.py in the convert directory.
+
