@@ -16,7 +16,7 @@ from os.path import join, basename, abspath, splitext, dirname, pardir, isdir, e
 
 from sklearn.model_selection import train_test_split
 
-from svm_classifier import train_cumul, test_cumul, get_openworld_score
+from svm_classifier import train_cumul, test_cumul, openworld_score, closeworld_score
 
 def get_logger():
     logging.basicConfig(format="[%(asctime)s] >> %(message)s", level=logging.INFO)
@@ -55,7 +55,8 @@ def main(X, y, result_path):
     logger.info(f"[GOT] predicted the labels from the test samples.")
     
     # get the open-world metrics score
-    lines = get_openworld_score(y_test, y_pred, max(y))
+    #lines = openworld_score(y_test, y_pred, max(y))
+    lines = closeworld_score(y_test, y_pred)
     logger.info(f"[GOT] the result.")
     
     with open(result_path, "w") as f:
