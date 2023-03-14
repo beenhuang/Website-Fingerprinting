@@ -16,8 +16,8 @@ from os.path import abspath, dirname, join, pardir, splitext, basename, exists
 
 from cumul_feature import cumul_feature
 
-PACKET_SIZE = 514
-#PACKET_SIZE = 1
+#PACKET_SIZE = 514
+PACKET_SIZE = 1
 
 # create logger
 def get_logger():

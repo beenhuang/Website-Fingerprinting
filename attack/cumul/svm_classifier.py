@@ -11,7 +11,6 @@ from sklearn.preprocessing import StandardScaler
 
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.metrics import make_scorer
-from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 # training
 def train_cumul(X_train, y_train, ker="rbf", c=2048, g=0.015625):
@@ -27,27 +26,8 @@ def test_cumul(model, X_test):
     return y_pred
 
 
-def closeworld_score(y_true, y_pred):
-    # accuracy
-    accuracy = accuracy_score(y_true, y_pred)
-    # precision      
-    precision = precision_score(y_true, y_pred, average="macro")
-    # recall
-    recall = recall_score(y_true, y_pred, average="macro")
-    # F-score
-    f1 = 2*(precision*recall) / float(precision+recall)
-
-    lines = []
-    lines.append(f"accuracy: {accuracy}\n")
-    lines.append(f"precision: {precision}\n")
-    lines.append(f"recall: {recall}\n")
-    lines.append(f"F1: {f1}\n")
-
-    return lines
-
-
 # get open-world score
-def openworld_score(y_true, y_pred, label_unmon):
+def get_openworld_score(y_true, y_pred, label_unmon):
     # TP-correct, TP-incorrect, FN  TN, FN
     tp_c, tp_i, fn, tn, fp = 0, 0, 0, 0, 0
 
