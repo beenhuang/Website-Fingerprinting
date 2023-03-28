@@ -102,7 +102,6 @@ class DFNet:
         return model
 
 if __name__ == "__main__":
-    input_shape = (5000,1)
-    model = DFNet.build(input_shape, 100)
+    model = DFNet.build((5000,1), 100)
     model.summary()
 
