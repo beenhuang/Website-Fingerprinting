@@ -15,7 +15,8 @@ from os.path import join, basename, abspath, splitext, dirname, pardir, isdir, e
 
 from sklearn.model_selection import train_test_split
 
-from kfp_classifier import train_kfp, test_kfp, openworld_score
+from kfp_classifier import train_kfp, test_kfp
+from metrics import openworld_score, closedworld_score
 
 # create logger
 def get_logger():
