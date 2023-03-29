@@ -41,7 +41,7 @@ def closedworld_score(y_true, y_pred):
     lines.append(f"precision: {precision}\n")
     lines.append(f"recall: {recall}\n")
     lines.append(f"F1: {f1}\n\n")
-    lines.append(f"incorrect prediction:{sorted_unequal}")
+    lines.append(f"incorrect prediction(y_true, y_pred):{sorted_unequal}")
 
     return lines
 
