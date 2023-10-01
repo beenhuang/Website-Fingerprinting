@@ -14,9 +14,10 @@ def training_loop(n_epochs, train_dataloader, model, loss_fn, optimizer, device,
     for epoch in range(n_epochs):
         train_one_epoch(epoch+1, train_dataloader, model, loss_fn, optimizer, device)
 
-        if valid_dataloader != None:
+        if valid_dataloader != None: # valiate
             val_loss = validate(epoch+1, valid_dataloader, model, loss_fn, device)
-        if lr_reducer != None:
+        
+        if lr_reducer != None: # reduce the learning rate
             lr_reducer.step(val_loss)
 
 def train_one_epoch(epoch_idx, train_dataloader, model, loss_fn, optimizer, device):

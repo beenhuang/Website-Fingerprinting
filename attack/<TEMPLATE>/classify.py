@@ -19,13 +19,15 @@ import torch.nn.functional as F
 from torch.optim import Adamax
 import numpy as np
 
-from dataloader import train_test_dataloader
-from dfnet import DFNet
+from dataloader import *
+from traintest import *
 from metrics import *
+from dfnet import DFNet
 
 def main(X, y):
     # get train_dataloader & test_dataloader
     train_dataloader, test_dataloader = train_test_dataloader(X, y)    
+    
     # select cpu/gpu mode
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"device: {device}")
@@ -49,57 +51,6 @@ def main(X, y):
     lines = test(test_dataloader, model, CLASSES, device)
 
     return lines
-
-def training_loop(n_epochs, train_dataloader, model, loss_fn, optimizer, device):
-    
-    for epoch in range(n_epochs):
-        # loss value
-        running_loss = 0.0
-        # update batch_normalization and enable dropout layer
-        model.train()
-
-        # loop
-        for batch_X, batch_y in train_dataloader:
-            # dataset load to device
-            batch_X, batch_y = batch_X.to(device), batch_y.to(device)
-
-            # 1. Compute prediction error
-            pred = model(batch_X)
-            loss = loss_fn(pred, batch_y)
-
-            # 2. Backpropagation
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            # accumulate loss value
-            running_loss += loss.item()
-        
-        # print loss average:
-        print(f"[Epoch_{epoch+1}] Avg_loss(total_loss/num_batch): {running_loss}/{len(train_dataloader)} = {running_loss/len(train_dataloader)}")  
-
-def test(test_dataloader, model, device):
-    # prediction & true label
-    y_pred, y_true = [], []
-    
-    # not update batch_normalization and disable dropout layer
-    model.eval()
-    # set gradient calculation to off
-    with torch.no_grad():
-        for batch_X, batch_y in test_dataloader:
-            # data load to device
-            batch_X, batch_y = batch_X.to(device), batch_y.to(device)
-           
-            # get the prediction of the model.
-            prediction = model(batch_X)
-
-            y_pred.extend([np.argmax(x) for x in F.softmax(prediction, dim=1).data.cpu().tolist()])
-            y_true.extend(batch_y.data.cpu().tolist())
-
-    # get score
-    lines = openworld_score(y_true, y_pred, max(y_true))
-
-    return lines 
 
 # logger and arguments
 def logger_and_arguments():

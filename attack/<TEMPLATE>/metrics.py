@@ -5,27 +5,24 @@
 <brief>   OW, CW, binary metrics
 """
 
-# binary score
-def binary_score(y_true, y_pred, label_unmon):
+# open-world score for two classes.`
+def ow_score_twoclass(y_true, y_pred, label_unmon):
     tp, fn, tn, fp = 0, 0, 0, 0
 
-    # iterate through each element
-    for i in range(len(y_pred)):
-        # [case_1]: pos sample, predict pos.
-        if y_true[i] != label_unmon and y_pred[i] == y_true[i]:
-            tp += 1
-        # [case_2]: pos sample, predict neg.
-        elif y_true[i] != label_unmon and y_pred[i] != y_true[i]:
-            fn += 1
-        # [case_3]: neg sample, predict neg.    
-        elif y_true[i] == label_unmon and y_pred[i] == y_true[i]:
-            tn += 1
-        # [case_4]: neg sample, predict pos.    
-        elif y_true[i] == label_unmon and y_pred[i] != y_true[i]:
-            fp += 1   
-        else:
-            sys.exit(f"ERROR prediction:{y_pred[i]}, true_label:{y_true[i]}")        
-
+    for idx, label_pred in enumerate(y_pred): 
+        label_true = y_true[idx]   
+        
+        if label_true != label_unmon: # positive sample
+            if label_pred == label_true: # predict positive
+                tp += 1
+            else: # predict nagetive
+                fn += 1    
+        else: # negative sample
+            if label_pred == label_true: # predict negative
+                tn += 1
+            else: # predict positive
+                fp += 1
+   
     # accuracy
     accuracy = (tp+tn) / float(tp+fn+tn+fp)
     # precision      
@@ -55,36 +52,34 @@ def binary_score(y_true, y_pred, label_unmon):
    
     return lines
 
-# open-world score
-def openworld_score(y_true, y_pred, label_unmon):
+# open-world score for multi-class.
+def ow_score_multiclass(y_true, y_pred, label_unmon):
     # TP-correct, TP-incorrect, FN  TN, FN
     tp_c, tp_i, fn, tn, fp = 0, 0, 0, 0, 0
 
     # iterate through each element
-    for i in range(len(y_pred)):
-        # [case_1]: pos sample, predict pos and correct.
-        if y_true[i] != label_unmon and y_pred[i] != label_unmon and y_pred[i] == y_true[i]:
-            tp_c += 1
-        # [case_2]: pos sample, predict pos but incorrect class.
-        elif y_true[i] != label_unmon and y_pred[i] != label_unmon and y_pred[i] != y_true[i]:
-            tp_i += 1
-        # [case_3]: pos sample, predict neg.
-        elif y_true[i] != label_unmon and y_pred[i] == label_unmon:
-            fn += 1
-        # [case_4]: neg sample, predict neg.    
-        elif y_true[i] == label_unmon and y_pred[i] == y_true[i]:
-            tn += 1
-        # [case_5]: neg sample, predict pos    
-        elif y_true[i] == label_unmon and y_pred[i] != y_true[i]:
-            fp += 1   
-        else:
-            sys.exit(f"ERROR prediction:{y_pred[i]}, true_label:{y_true[i]}")        
+    for idx, label_pred in enumerate(y_pred): 
+        label_true = y_true[idx]
 
+        if label_true != label_unmon: # positive sample
+            if label_pred != label_unmon: # predict monitored class
+                if label_pred == label_true # predict corrcect website class
+                    tp_c += 1
+                else: # predict incorrcect website class  
+                    tp_i += 1
+            else: # predict unmonitored class
+                fn += 1    
+        else: # negative sample
+            if label_pred == label_true: # predict negative
+                tn += 1
+            else: # predict positive
+                fp += 1
+ 
     # accuracy
     accuracy = (tp_c+tn) / float(tp_c+tp_i+fn+tn+fp)
     # precision      
     precision = tp_c / float(tp_c+tp_i+fp)
-    # recall or TPR
+    # recall
     recall = tp_c / float(tp_c+tp_i+fn)
     # F1-score
     f1 = 2*(precision*recall) / float(precision+recall)
@@ -110,7 +105,7 @@ def openworld_score(y_true, y_pred, label_unmon):
     return lines
 
 # closed-world score
-def closedworld_score(y_true, y_pred):
+def cw_score(y_true, y_pred):
     # accuracy
     accuracy = accuracy_score(y_true, y_pred)
     # precision      
@@ -133,16 +128,18 @@ def closedworld_score(y_true, y_pred):
 
     return lines
 
-def ow_score_with_th(y_true, y_pred_th, label_unmon, threshold):
+def ow_score_with_th(y_true, y_pred_prob, label_unmon, threshold):
     y_pred = []
 
     # if the sample's probability is less than the threshold, the sample will get the unmonitord label.
-    for x in y_pred_th:
-        if x[1] < threshold:
-            y_pred.append(label_unmon)
-        else:
-            y_pred.append(x[0]) 
+    for x in y_pred_prob:
+        label_pred, prob = x
 
-    return openworld_score(y_true, y_pred, label_unmon)        
+        if prob < threshold: # prob < threshold
+            y_pred.append(label_unmon) # get the unmonitord label.
+        else:
+            y_pred.append(label_pred) # get the prediction label
+
+    return ow_score_multiclass(y_true, y_pred, label_unmon)        
 
                
