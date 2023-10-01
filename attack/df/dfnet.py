@@ -12,7 +12,7 @@ from torchsummary import summary
 class DFNet(nn.Module):
 
     def __init__(self, classes):
-        super().__init__()
+        super(DFNet, self).__init__()
         self.block1 = self.__conv_block(1, 32, nn.ELU())
         self.block2 = self.__conv_block(32, 64, nn.ReLU())
         self.block3 = self.__conv_block(64, 128, nn.ReLU())
@@ -21,13 +21,13 @@ class DFNet(nn.Module):
         self.pred_block = self.__pred_block(classes)
 
     def forward(self, x):
-        n = self.block1(x)
-        n = self.block2(n)
-        n = self.block3(n)
-        n = self.block4(n)
-        n = torch.flatten(n, start_dim=1)
-        n = self.fc_block(n)
-        out = self.pred_block(n)
+        out = self.block1(x)
+        out = self.block2(out)
+        out = self.block3(out)
+        out = self.block4(out)
+        out = torch.flatten(out, start_dim=1)
+        out = self.fc_block(out)
+        out = self.pred_block(out)
 
         return out        
     
