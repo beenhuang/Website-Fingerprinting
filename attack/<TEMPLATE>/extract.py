@@ -14,20 +14,19 @@ from multiprocessing import Pool, cpu_count
 from os.path import abspath, dirname, pardir, exists, join, splitext
 
 from preprocess import Preprocess
-from kfp_feature import kfp_feature
-
-UNMON_LABEL=100
+from df_feature import df_feature
 
 # only need to change the extract function.
-def extract(data_dir, feature_dir, file):
-    print(f"extracting: {file}")
+def extract(data_dir, feature_dir, file, unmon_label):
+    print(f"\t extracting: {file}", end="\r", flush=True)
+    
     # feature
-    standard_trace = Preprocess.Wang20000(data_dir, file)  
-    feature = kfp_feature(standard_trace)
+    standard_trace = Preprocess.wang20000(data_dir, file)  
+    feature = df_feature(standard_trace)
     
     # label
     f_name, _ = splitext(file)    
-    label = UNMON_LABEL if "-" not in f_name else int(f_name.split("-")[0])
+    label = unmon_label if "-" not in f_name else int(f_name.split("-")[0])
     
     # save
     with open(join(feature_dir,file), "w") as f:
@@ -45,25 +44,26 @@ def logger_and_arguments():
     
     # parse arguments
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument("-i", "--in", required=True, help="load trace data")
-    parser.add_argument("-a", "--attack", required=True, help="WF attack")
+    parser.add_argument("--wf", required=True, help="WF attack")    
+    parser.add_argument("--data_dir", required=True, help="dataset directory")
+    parser.add_argument("--unmon_label", required=True, help="unmonitored label")
     args = vars(parser.parse_args())
 
     return logger, args
 
 # features are extracted one by one.
-def main(data_dir, feature_dir):
+def main(data_dir, feature_dir, unmon_label):
     X, y = [], []
     for file in os.listdir(data_dir):
-        feature, label = extract(data_dir, feature_dir, file)
+        feature, label = extract(data_dir, feature_dir, file, unmon_label)
         X.append(feature)
         y.append(label)
 
     return X, y
     
 # multiprocessing
-def main_mp(data_dir, feature_dir):
-    params = [(data_dir,feature_dir,file) for file in os.listdir(data_dir)]
+def main_mp(data_dir, feature_dir, unmon_label):
+    params = [(data_dir,feature_dir,file,unmon_label) for file in os.listdir(data_dir)]
 
     with Pool(cpu_count()) as pool:
         result = pool.starmap(extract, params)
@@ -74,18 +74,17 @@ def main_mp(data_dir, feature_dir):
 
 if __name__ == "__main__":
     BASE_DIR = abspath(join(dirname(__file__), pardir, pardir))
-    MAIN_DATA_DIR = join(BASE_DIR, "data")
-    MAIN_ATTACK_DIR = join(BASE_DIR, "attack")
 
     logger, args = logger_and_arguments()
     logger.info(f"Arguments: {args}")
 
-    data_dir = join(MAIN_DATA_DIR, args["in"])   
-    feature_dir = join(MAIN_ATTACK_DIR, args["attack"], "feature", args["in"])
+    data_dir = join(BASE_DIR, "data", args["data_dir"])   
+    feature_dir = join(BASE_DIR, "attack", args["wf"], "feature", args["data_dir"])
     if not exists(feature_dir):
         os.makedirs(feature_dir)
 
-    X, y = main_mp(data_dir, feature_dir) 
+    # main function
+    X, y = main_mp(data_dir, feature_dir, int(args["unmon_label"])) 
 
     with open(join(feature_dir,"feature.pkl"), "wb") as f:
         pickle.dump((X, y), f)  

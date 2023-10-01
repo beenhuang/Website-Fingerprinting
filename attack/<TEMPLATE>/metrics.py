@@ -132,3 +132,17 @@ def closedworld_score(y_true, y_pred):
     lines.append(f"incorrect prediction:{sorted_incorrect}")
 
     return lines
+
+def ow_score_with_th(y_true, y_pred_th, label_unmon, threshold):
+    y_pred = []
+
+    # if the sample's probability is less than the threshold, the sample will get the unmonitord label.
+    for x in y_pred_th:
+        if x[1] < threshold:
+            y_pred.append(label_unmon)
+        else:
+            y_pred.append(x[0]) 
+
+    return openworld_score(y_true, y_pred, label_unmon)        
+
+               

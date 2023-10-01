@@ -8,24 +8,32 @@
 from os.path import join
 
 class Preprocess():
-
     # for Wang-20000 dataset
     @staticmethod
-    def Wang20000(data_dir, file):
-        with open(join(data_dir,file), "r") as f:
-            trace = f.readlines()         
+    def wang20000(data_dir, file):
+        return Preprocess.standard_trace(data_dir, file, "\t")
+ 
+    # for BigEnough dataset
+    @staticmethod
+    def bigenough(data_dir, file):
+        return Preprocess.standard_trace(data_dir, file, "\t")
 
-        DELIMITER="\t"
-        start_time = float(trace[0].split(DELIMITER)[0])
+    @staticmethod
+    def standard_trace(data_dir, file, delimiter):
+        with open(join(data_dir,file), "r") as f:
+            trace = f.readlines()  
+
+        start_time = float(trace[0].split(delimiter)[0])
         
-        standard_trace = []
+        std_trace = []
         for e in trace:
-            e = e.split(DELIMITER)
+            e = e.split(delimiter)
+
             time = float(e[0]) - start_time
             direction = int(e[1].strip("\n"))
-            standard_trace.append([time, direction])
 
-        return standard_trace
+            std_trace.append([time, direction])
 
+        return std_trace    
 
 
